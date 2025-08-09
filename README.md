@@ -8,17 +8,23 @@ MCP (Model Context Protocol) allows AI assistants like Puch to connect to extern
 
 ## What's Included in This Starter?
 
-### 🎯 Job Finder Tool
-- **Analyze job descriptions** - Paste any job description and get smart insights
-- **Fetch job postings from URLs** - Give a job posting link and get the full details
-- **Search for jobs** - Use natural language to find relevant job opportunities
+## Folders
 
-### 🖼️ Image Processing Tool
-- **Convert images to black & white** - Upload any image and get a monochrome version
+- **[`mcp-bearer-token/`](./mcp-bearer-token/)**  
+  Example MCP servers using **Bearer token** auth (required by Puch AI). Includes:
+  - **[`mcp_starter.py`](./mcp-bearer-token/mcp_starter.py)**  
+    A minimal MCP server with:
+    - Text input/output tool (echo-style processing)
+    - Image input/output tool (e.g., convert to black & white)
+    - Bearer token validation
+  - **[`puch-user-id-mcp-example.py`](./mcp-bearer-token/puch-user-id-mcp-example.py)**  
+    A task management MCP server that demonstrates how to use `puch_user_id` (a unique, Puch-provided user identifier) to scope tasks and data per user.
 
-### 🔐 Built-in Authentication
-- Bearer token authentication (required by Puch AI)
-- Validation tool that returns your phone number
+- **[`mcp-google-oauth/`](./mcp-google-oauth/)**  
+  Example MCP server showing how to implement **OAuth** with Google for MCP authentication/authorization.
+
+- **[`mcp-oauth-github/`](./mcp-oauth-github/)**  
+  Example MCP server showing how to implement **OAuth** with GitHub for MCP authentication/authorization.
 
 ## Quick Setup Guide
 
@@ -54,6 +60,7 @@ MY_NUMBER=919876543210
 ```
 
 **Important Notes:**
+
 - `AUTH_TOKEN`: This is your secret token for authentication. Keep it safe!
 - `MY_NUMBER`: Your WhatsApp number in format `{country_code}{number}` (e.g., `919876543210` for +91-9876543210)
 
@@ -88,6 +95,7 @@ Since Puch needs to access your server over HTTPS, you need to expose your local
 #### Option B: Deploy to Cloud
 
 You can also deploy this to services like:
+
 - Railway
 - Render
 - Heroku
@@ -115,6 +123,7 @@ To get more detailed error messages:
 ### Adding New Tools
 
 1. **Create a new tool function:**
+
    ```python
    @mcp.tool(description="Your tool description")
    async def your_tool_name(
@@ -126,28 +135,31 @@ To get more detailed error messages:
 
 2. **Add required imports** if needed
 
-
 ## 📚 **Additional Documentation Resources**
 
 ### **Official Puch AI MCP Documentation**
+
 - **Main Documentation**: https://puch.ai/mcp
 - **Protocol Compatibility**: Core MCP specification with Bearer & OAuth support
 - **Command Reference**: Complete MCP command documentation
 - **Server Requirements**: Tool registration, validation, HTTPS requirements
 
 ### **Technical Specifications**
+
 - **JSON-RPC 2.0 Specification**: https://www.jsonrpc.org/specification (for error handling)
 - **MCP Protocol**: Core protocol messages, tool definitions, authentication
 
 ### **Supported vs Unsupported Features**
 
 **✓ Supported:**
+
 - Core protocol messages
 - Tool definitions and calls
 - Authentication (Bearer & OAuth)
 - Error handling
 
 **✗ Not Supported:**
+
 - Videos extension
 - Resources extension
 - Prompts extension
