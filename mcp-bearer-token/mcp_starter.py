@@ -123,6 +123,12 @@ mcp = FastMCP(
     auth=SimpleBearerAuthProvider(TOKEN),
 )
 
+
+@mcp.tool
+async def about() -> dict:
+    return {"name": mcp.name, "description": "An Example Bearer token mcp server"}
+
+
 # --- Tool: validate (required by Puch) ---
 @mcp.tool
 async def validate() -> str:

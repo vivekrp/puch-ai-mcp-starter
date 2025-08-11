@@ -31,6 +31,14 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
       content: [{ text: String(PHONE_NUMBER), type: "text" }],
     }));
 
+    this.server.tool("about", "Description about this mcp server", {}, async () => ({
+      content: [],
+      structuredContent: {
+        name: "Github OAuth Demo",
+        description: "Github OAUTH DEMO",
+      },
+    }));
+
     // Use the upstream access token to facilitate tools
     this.server.tool("userInfoOctokit", "Get user info from GitHub, via Octokit", {}, async () => {
       const octokit = new Octokit({ auth: this.props.accessToken });
