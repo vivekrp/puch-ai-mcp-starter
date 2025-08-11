@@ -1,0 +1,29 @@
+{
+  "name": "puch-ai-mcp-starter",
+  "version": "1.0.0",
+  "description": "Starter template for creating MCP servers that work with Puch AI",
+  "scripts": {
+    "start": "node scripts/quick-start.js",
+    "install-all": "pnpm install && cd mcp-google-oauth && pnpm install && cd ../mcp-oauth-github && pnpm install",
+    "setup-python": "uv venv && uv sync && echo 'Python environment set up successfully!'",
+    "setup-env": "node scripts/setup-env.js",
+    "bearer": "node scripts/run-bearer.js",
+    "bearer:task": "node scripts/run-bearer-task.js", 
+    "google": "node scripts/run-google.js",
+    "github": "node scripts/run-github.js",
+    "google:dev": "cd mcp-google-oauth && pnpm run dev",
+    "google:deploy": "cd mcp-google-oauth && pnpm run deploy",
+    "github:dev": "cd mcp-oauth-github && pnpm run dev", 
+    "github:deploy": "cd mcp-oauth-github && pnpm run deploy",
+    "test-inspector": "npx @modelcontextprotocol/inspector@latest",
+    "check-deps": "node scripts/check-deps.js"
+  },
+  "devDependencies": {
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@8.0.0"
+}

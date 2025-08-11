@@ -26,7 +26,46 @@ MCP (Model Context Protocol) allows AI assistants like Puch to connect to extern
 - **[`mcp-oauth-github/`](./mcp-oauth-github/)**  
   Example MCP server showing how to implement **OAuth** with GitHub for MCP authentication/authorization.
 
-## Quick Setup Guide
+## Quick Start (Choose Your Path)
+
+### 🚀 Super Quick Setup (Recommended for Beginners)
+
+```bash
+# 1. Install dependencies and check system requirements
+pnpm install
+pnpm run check-deps
+
+# 2. Interactive environment setup
+pnpm run setup-env
+
+# 3. Start Python Bearer Token server (easiest)
+pnpm run bearer
+
+# 4. In another terminal, make it public
+ngrok http 8086
+
+# 5. Connect in Puch AI:
+# /mcp connect https://your-ngrok-url.ngrok.io/mcp your_auth_token
+```
+
+### 🔐 OAuth Servers (Advanced)
+
+```bash
+# Google OAuth MCP server
+pnpm run google
+
+# GitHub OAuth MCP server  
+pnpm run github
+
+# Task management server (demonstrates user scoping)
+pnpm run bearer:task
+```
+
+### 📖 Detailed Setup
+
+For detailed setup instructions, troubleshooting, and OAuth configuration, see **[SETUP.md](./SETUP.md)**.
+
+## Manual Setup (if you prefer step-by-step)
 
 ### Step 1: Install Dependencies
 
@@ -71,7 +110,7 @@ cd mcp-bearer-token
 python mcp_starter.py
 ```
 
-You'll see: `🚀 Starting MCP server on http://0.0.0.0:8086`
+You'll see: `🚀 Starting MCP server on http://*******:8086`
 
 ### Step 4: Make It Public (Required by Puch)
 
