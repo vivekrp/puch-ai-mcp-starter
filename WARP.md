@@ -4,202 +4,212 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Repository Overview
 
-This is a starter template for creating Model Context Protocol (MCP) servers that work with Puch AI. The repository contains multiple implementations demonstrating different authentication methods for MCP servers:
+This is a comprehensive starter template for creating Model Context Protocol (MCP) servers that integrate with Puch AI. The repository demonstrates three distinct architectural patterns for MCP server development, each targeting different authentication and deployment scenarios.
 
-- **Bearer token authentication** (Python-based) - simplest approach, required by Puch AI
-- **Google OAuth authentication** (TypeScript/Cloudflare Workers) - advanced cloud deployment
-- **GitHub OAuth authentication** (TypeScript/Cloudflare Workers) - advanced cloud deployment with user access control
+## Architecture Patterns
 
-## Development Commands
+### 1. Python Bearer Token Servers (`mcp-bearer-token/`)
+**Framework:** FastMCP with Pydantic validation  
+**Authentication:** Simple bearer token validation  
+**Deployment:** Local server with ngrok tunneling  
 
-### Python Bearer Token Server (Primary Implementation)
+**Key architectural components:**
+- `SimpleBearerAuthProvider`: Custom auth provider wrapping FastMCP's BearerAuthProvider
+- `RichToolDescription` model: Structured tool metadata for better AI understanding
+- `Fetch` utility class: Centralized HTTP client with error handling and content parsing
+- Tools decorated with `@mcp.tool()` and typed with `Annotated` fields
 
+**Two server variants:**
+- `mcp_starter.py`: Basic server with job searching and image processing
+- `puch-user-id-mcp-example.py`: Demonstrates user-scoped data using `puch_user_id` parameter
+
+### 2. Google OAuth Server (`mcp-google-oauth/`)
+**Platform:** Cloudflare Workers with Durable Objects  
+**Framework:** `workers-mcp` and `agents/mcp` base classes  
+**Authentication:** Google OAuth 2.0 with Gmail API integration  
+**Storage:** Cloudflare KV for session management  
+
+**Key architectural components:**
+- `MyMCP` extends `McpAgent<Env, Record<string, never>, Props>`
+- `Props` type defines encrypted user context (name, email, accessToken)
+- Server-Sent Events (SSE) endpoint at `/sse` for MCP communication
+- OAuth flow handled by `GoogleHandler` with callback URL management
+
+### 3. GitHub OAuth Server (`mcp-oauth-github/`)
+**Platform:** Cloudflare Workers with Workers AI integration  
+**Framework:** Similar to Google OAuth but with GitHub-specific integrations  
+**Authentication:** GitHub OAuth with user allowlist system  
+**AI Integration:** Cloudflare Workers AI for image generation (Flux model)  
+
+**Key architectural components:**
+- Role-based access control via `ALLOWED_USERNAMES` set
+- Octokit integration for GitHub API operations
+- Conditional tool registration based on user permissions
+- Workers AI binding for image generation tools
+
+## Common Development Commands
+
+### Quick Start
 ```bash
-# Setup environment
-uv venv
-uv sync
-source .venv/bin/activate
+# Interactive setup menu with guided configuration
+pnpm start
 
-# Configure environment
-cp .env.example .env
-# Edit .env with AUTH_TOKEN and MY_NUMBER
-
-# Run the basic MCP server
-cd mcp-bearer-token
-python mcp_starter.py
-
-# Run the user-scoped task management server
-python puch-user-id-mcp-example.py
-
-# Make server public with ngrok (required for Puch AI)
-ngrok http 8086
+# Install all dependencies across all implementations  
+pnpm install-all
 ```
 
-### TypeScript OAuth Servers (Advanced)
-
+### Python Bearer Token Servers
 ```bash
-# Google OAuth Server
-cd mcp-google-oauth
-pnpm install
-wrangler dev  # Development
-wrangler deploy  # Production
+# Basic bearer token server (recommended for beginners)
+pnpm run bearer
 
-# GitHub OAuth Server
-cd mcp-oauth-github
-pnpm install
-wrangler dev  # Development
-wrangler deploy  # Production
+# Task management server with user scoping
+pnpm run bearer:task
+
+# Manual setup steps
+pnpm run check-deps     # Verify system dependencies
+pnpm run setup-env      # Interactive .env configuration
+pnpm run setup-python   # Create Python virtual environment
 ```
 
-## Architecture Overview
+### OAuth Servers (Development)
+```bash
+# Google OAuth server (requires Google Cloud setup)
+pnpm run google:dev
 
-### Core MCP Concepts
-
-The repository demonstrates the Model Context Protocol architecture:
-
-1. **MCP Server**: Exposes tools/functions that AI assistants can invoke
-2. **Authentication**: Bearer tokens or OAuth for secure access
-3. **Tool Registration**: Each server defines tools with descriptions and schemas
-4. **Communication**: JSON-RPC 2.0 over HTTP with Server-Sent Events (SSE)
-
-### Python Implementation (`mcp-bearer-token/`)
-
-- **FastMCP Framework**: Uses `fastmcp` library for rapid MCP server development
-- **Bearer Authentication**: Simple token-based auth via `SimpleBearerAuthProvider`
-- **Tool Pattern**: Uses `@mcp.tool` decorator with Pydantic models for validation
-- **Required Tools**: 
-  - `validate()`: Returns phone number for Puch AI validation
-  - Custom tools with rich descriptions using `RichToolDescription`
-
-Key files:
-- `mcp_starter.py`: Basic server with job search and image processing tools
-- `puch-user-id-mcp-example.py`: Demonstrates user-scoped data with `puch_user_id`
-
-### TypeScript OAuth Implementations
-
-- **Cloudflare Workers**: Serverless deployment platform
-- **OAuth Provider**: Uses `@cloudflare/workers-oauth-provider` for OAuth flows
-- **Durable Objects**: For persistent session state (via `agents/mcp` McpAgent)
-- **KV Storage**: For OAuth session management
-
-Key patterns:
-- Extends `McpAgent<Env, Record<string, never>, Props>` base class
-- OAuth context stored in encrypted `Props` type
-- Tools can access authenticated user info via `this.props`
-
-## Development Patterns
-
-### Adding New Tools (Python)
-
-```python
-from typing import Annotated
-from pydantic import Field
-
-@mcp.tool(description="Tool description here")
-async def your_tool_name(
-    parameter: Annotated[str, Field(description="Parameter description")]
-) -> str:
-    # Tool implementation
-    return "Result"
+# GitHub OAuth server (requires GitHub OAuth app)  
+pnpm run github:dev
 ```
 
-### Rich Tool Descriptions
-
-Use structured descriptions for better AI understanding:
-
-```python
-class RichToolDescription(BaseModel):
-    description: str
-    use_when: str
-    side_effects: str | None = None
-
-TOOL_DESCRIPTION = RichToolDescription(
-    description="What the tool does",
-    use_when="When to use this tool", 
-    side_effects="What changes it makes"
-)
-
-@mcp.tool(description=TOOL_DESCRIPTION.model_dump_json())
-async def my_tool():
-    pass
+### OAuth Servers (Production Deployment)
+```bash
+pnpm run google:deploy
+pnpm run github:deploy
 ```
 
-### User-Scoped Data Pattern
-
-For multi-user applications, use `puch_user_id` to scope data:
-
-```python
-def _user_tasks(puch_user_id: str) -> dict[str, dict]:
-    if not puch_user_id:
-        raise McpError(ErrorData(code=INVALID_PARAMS, message="puch_user_id is required"))
-    return TASKS.setdefault(puch_user_id, {})
-```
-
-### OAuth Access Control (TypeScript)
-
-```typescript
-const ALLOWED_USERNAMES = new Set<string>(['username1', 'username2']);
-
-// In tool definition
-if (ALLOWED_USERNAMES.has(this.props.login)) {
-  // Grant access to protected tool
-} else {
-  // Deny access
-}
+### Testing and Debugging
+```bash
+# Launch MCP Inspector for testing all server types
+pnpm run test-inspector
 ```
 
 ## Environment Configuration
 
-### Python Servers
-- `AUTH_TOKEN`: Secret bearer token for authentication
-- `MY_NUMBER`: WhatsApp number in format `{country_code}{number}`
-
-### Cloudflare Workers
-- Secrets via `wrangler secret put`: 
-  - `GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET`
-  - `GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET` 
-  - `COOKIE_ENCRYPTION_KEY`
-- KV namespace for OAuth sessions: `OAUTH_KV`
-
-## Puch AI Integration
-
-### Connection Pattern
-```
-/mcp connect https://your-server-url/endpoint auth_token_here
-/mcp diagnostics-level debug  # For debugging
+### Python Servers (`.env` file)
+```env
+AUTH_TOKEN="long_random_string_for_security"
+MY_NUMBER="919876543210"  # WhatsApp number with country code
 ```
 
-### Required Tools
-- `validate()`: Must return the phone number `+919998881729` or `919998881729`
-- `about()`: Optional tool describing the server
+### OAuth Servers (Cloudflare Secrets)
+```bash
+# Set via wrangler secret commands
+wrangler secret put GOOGLE_CLIENT_ID        # Google OAuth
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put GITHUB_CLIENT_ID        # GitHub OAuth  
+wrangler secret put GITHUB_CLIENT_SECRET
+wrangler secret put COOKIE_ENCRYPTION_KEY   # Both OAuth (32-char random)
+```
 
-### Server Endpoints
-- Python: `http://localhost:8086` (via ngrok for public access)
-- TypeScript: `/sse` endpoint for Server-Sent Events connection
+## Key Development Patterns
 
-## Key Dependencies
+### Python MCP Tool Development
+- Use `RichToolDescription` model for structured tool metadata
+- Implement proper error handling with `McpError` and MCP error codes
+- Leverage `Annotated` types for parameter validation
+- Always include a `validate()` tool returning the phone number for Puch AI compatibility
 
-### Python Stack
-- `fastmcp>=2.11.2`: Core MCP server framework
-- `python-dotenv>=1.1.1`: Environment variable loading
-- `pillow>=11.3.0`: Image processing capabilities
-- `httpx`, `beautifulsoup4`, `readabilipy`: Web scraping utilities
+### OAuth MCP Development  
+- Extend `McpAgent` base class with typed Props interface
+- Use encrypted Props to store user context across requests
+- Implement OAuth callback handling with proper state management
+- Use KV namespaces for session persistence
+- Consider user authorization patterns (allowlists, role-based access)
 
-### TypeScript Stack  
-- `@modelcontextprotocol/sdk`: Core MCP protocol implementation
-- `@cloudflare/workers-oauth-provider`: OAuth server implementation
-- `workers-mcp`, `agents`: MCP framework for Cloudflare Workers
-- `hono`: HTTP framework for routing
-- `octokit`: GitHub API integration (GitHub OAuth variant)
+### Tool Registration Patterns
+```python
+# Python: Rich descriptions with structured metadata
+@mcp.tool(description=RichToolDescription(...).model_dump_json())
 
-## Testing and Deployment
+# TypeScript: Zod schemas for parameter validation
+this.server.tool("toolName", { param: z.string().describe("...") }, async ({param}) => {})
+```
 
-### Local Testing
-- Use MCP Inspector: `npx @modelcontextprotocol/inspector@latest`
-- Select SSE transport, connect to local server endpoints
-- Test OAuth flow and tool invocations
+### User-Scoped Data Pattern
+```python
+# Use puch_user_id for multi-tenant data isolation
+async def user_scoped_tool(
+    puch_user_id: Annotated[str, Field(description="Puch User Unique Identifier")],
+    # ... other parameters
+):
+    user_data = GLOBAL_STORE.setdefault(puch_user_id, {})
+    # ... operate on user-specific data
+```
 
-### Production Deployment
-- Python: Deploy to Railway, Render, Heroku, or DigitalOcean
-- TypeScript: Deploy to Cloudflare Workers via `wrangler deploy`
-- Ensure HTTPS endpoints for Puch AI compatibility
+## Authentication Flow Architecture
+
+### Bearer Token Flow
+1. Client provides token in Authorization header
+2. `SimpleBearerAuthProvider.load_access_token()` validates token
+3. Tools execute with validated context
+
+### OAuth Flow  
+1. Client redirects to `/authorize` endpoint
+2. Server redirects to OAuth provider (Google/GitHub)
+3. OAuth provider redirects to `/callback` with code
+4. Server exchanges code for access token
+5. Server encrypts user context into Props and returns to client
+6. Subsequent tool calls include encrypted Props for user context
+
+## Testing and Connection
+
+### Local Development Testing
+- Python servers: `http://localhost:8086` (use ngrok for Puch AI)
+- OAuth servers: `http://localhost:8788/sse`
+
+### Puch AI Connection Commands
+```bash
+# Bearer token servers (via ngrok)
+/mcp connect https://your-ngrok-url.ngrok.io/mcp your_auth_token
+
+# OAuth servers (production)  
+/mcp connect https://your-worker.workers.dev/sse
+
+# Enable debug mode for troubleshooting
+/mcp diagnostics-level debug
+```
+
+## Dependencies and Prerequisites
+
+### System Requirements
+- Node.js 18+ and pnpm
+- Python 3.11+ and uv package manager  
+- ngrok (for Python servers)
+- Cloudflare account (for OAuth servers)
+
+### Python Dependencies (via pyproject.toml)
+- `fastmcp>=2.11.2` - Core MCP framework
+- `beautifulsoup4`, `readabilipy` - Web scraping and content extraction
+- `pillow` - Image processing
+- `python-dotenv` - Environment variable management
+
+### TypeScript Dependencies
+- `@modelcontextprotocol/sdk` - Core MCP protocol implementation
+- `@cloudflare/workers-oauth-provider` - OAuth flow management
+- `agents` - MCP agent base classes with encryption
+- `workers-mcp` - Cloudflare Workers MCP utilities
+- `hono` - Web framework for Cloudflare Workers
+
+## Architecture Decision Records
+
+### Why FastMCP for Python?
+FastMCP provides decorator-based tool registration with built-in Pydantic validation, making it ideal for rapid prototyping while maintaining type safety.
+
+### Why Cloudflare Workers for OAuth?
+Server-Sent Events (SSE) support, global edge distribution, integrated KV storage, and Workers AI make Cloudflare Workers optimal for OAuth MCP servers requiring real-time communication and AI capabilities.
+
+### Why User-Scoped Architecture?
+The `puch_user_id` parameter enables multi-tenant MCP servers where each Puch AI user gets isolated data, crucial for production deployments serving multiple users.
+
+### Why Rich Tool Descriptions?
+Structured tool metadata using `RichToolDescription` helps AI models better understand when and how to use tools, improving the overall user experience.
