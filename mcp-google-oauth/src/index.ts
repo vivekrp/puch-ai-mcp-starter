@@ -25,6 +25,13 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
     this.server.tool('validate', 'Validated this mcp server to be used by PuchAI', {}, async () => ({
       content: [{ text: String(PHONE_NUMBER), type: 'text' }],
     }))
+    this.server.tool('about', 'Description about this mcp server', {}, async () => ({
+      content: [],
+      structuredContent: {
+        name: 'Google OAuth Proxy Demo',
+        description: 'Google OAuth MCP server for sending mails.',
+      },
+    }))
 
     // Gmail send email tool
     this.server.tool(
@@ -85,7 +92,7 @@ export class MyMCP extends McpAgent<Env, Record<string, never>, Props> {
             },
           ],
         }
-      },
+      }
     )
   }
 }
